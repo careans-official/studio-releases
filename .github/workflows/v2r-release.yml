@@ -1,0 +1,93 @@
+name: 원고 작업실 윈도우·맥 배포
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v2r-workspace-v*'
+permissions:
+  contents: read
+concurrency:
+  group: v2r-workspace-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            platform: windows-x64
+            architecture: x64
+          - runner: macos-15-intel
+            platform: macos-x64
+            architecture: x64
+          - runner: macos-15
+            platform: macos-arm64
+            architecture: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+          architecture: ${{ matrix.architecture }}
+      - name: 빌드 소스 보호 해제 준비
+        working-directory: .
+        run: python -m pip install cryptography
+      - name: 빌드 소스 준비
+        working-directory: .
+        env:
+          V2R_BUILD_SOURCE_KEY: ${{ secrets.V2R_BUILD_SOURCE_KEY }}
+        run: python build_tools/unpack_source.py
+      - name: 빌드 의존성 설치
+        run: python -m pip install -r requirements.txt "pyinstaller==6.22.3"
+      - name: 테스트용 브라우저 설치
+        run: python -m playwright install chromium
+      - name: 프로그램 검증
+        run: python -m unittest discover -q
+      - name: 화면 검증
+        run: |
+          node test_ui_selection.cjs
+          node test_ui_daily_stats.cjs
+          node test_extension_privacy.cjs
+      - name: 운영체제 전용 실행 파일 빌드
+        run: python release_tools/build_native.py
+      - name: 실제 실행 파일 시작·종료 검증
+        run: python release_tools/smoke_native.py dist
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: v2r-${{ matrix.platform }}
+          path: |
+            app/dist/*.zip
+            app/dist/${{ matrix.platform }}.json
+          if-no-files-found: error
+          retention-days: 7
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: v2r-*
+          path: packages
+          merge-multiple: true
+      - name: 업데이트 검증 목록 작성
+        run: python build_tools/make_manifest.py packages
+      - name: 릴리스 공개
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          VERSION=$(python -c "import json;print(json.load(open('release_metadata.json'))['version'])")
+          TAG="v2r-workspace-v${VERSION}"
+          gh release create "$TAG" packages/*.zip packages/v2r-workspace-update.json --verify-tag --title "원고 작업실 v${VERSION} · Windows / macOS" --notes-file RELEASE_NOTES.md

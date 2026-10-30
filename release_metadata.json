@@ -1,0 +1,6 @@
+{
+  "version": "0.42.0",
+  "product": "v2r-workspace",
+  "repository": "careans-official/studio-releases",
+  "tag_prefix": "v2r-workspace-v"
+}
