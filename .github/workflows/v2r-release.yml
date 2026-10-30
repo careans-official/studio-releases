@@ -4,6 +4,9 @@ on:
   push:
     tags:
       - 'v2r-workspace-v*'
+env:
+  PYTHONUTF8: "1"
+  PYTHONIOENCODING: utf-8
 permissions:
   contents: read
 concurrency:
