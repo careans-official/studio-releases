@@ -47,6 +47,7 @@ jobs:
           node test_ui_selection.cjs
           node test_ui_daily_stats.cjs
           node test_extension_privacy.cjs
+          node test_extension_watchdog.cjs
       - name: 운영체제 전용 실행 파일 빌드
         run: python release_tools/build_native.py
       - name: 실제 실행 파일 시작·종료 검증
