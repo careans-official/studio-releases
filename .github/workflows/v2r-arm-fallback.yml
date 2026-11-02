@@ -1,20 +1,28 @@
 name: 원고 작업실 Apple Silicon 대체 빌드
 on:
   workflow_dispatch:
+    inputs:
+      arm_runner:
+        description: Apple Silicon hosted image
+        type: choice
+        default: macos-26
+        options:
+          - macos-26
+          - macos-15
 env:
   PYTHONUTF8: "1"
   PYTHONIOENCODING: utf-8
 permissions:
   contents: read
 concurrency:
-  group: v2r-workspace-arm-fallback-${{ github.ref }}
+  group: v2r-workspace-arm-fallback-${{ github.ref }}-${{ inputs.arm_runner || 'macos-26' }}
   cancel-in-progress: false
 jobs:
   build:
     strategy:
       matrix:
         include:
-          - runner: macos-26
+          - runner: ${{ inputs.arm_runner || 'macos-26' }}
             platform: macos-arm64
             architecture: arm64
     runs-on: ${{ matrix.runner }}
