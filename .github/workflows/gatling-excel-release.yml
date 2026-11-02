@@ -1,0 +1,30 @@
+name: Gatling Excel release
+on:
+  push:
+    tags:
+      - 'gatling-excel-v*'
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate program-only package
+        run: |
+          python3 - <<'PY'
+          import json, hashlib, zipfile, os
+          from pathlib import Path
+          root=Path('gatling-excel')
+          meta=json.loads((root/'gatling-excel-update.json').read_text(encoding='utf-8-sig'))
+          assert os.environ['GITHUB_REF_NAME']=='gatling-excel-v'+meta['version']
+          archive=root/('gatling-excel-windows-'+meta['version']+'.zip')
+          assert hashlib.sha256(archive.read_bytes()).hexdigest()==meta['sha256']
+          allowed={'기관총 액셀 서이추.exe','routine.ps1','app-update.ps1','version.json','실행.cmd','사용법.txt'}
+          with zipfile.ZipFile(archive) as z:
+            assert set(z.namelist())==allowed and len(z.namelist())==len(allowed)
+          PY
+      - name: Publish independent release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" gatling-excel/*.zip gatling-excel/gatling-excel-update.json --title "기관총 액셀 서이추 ${GITHUB_REF_NAME#gatling-excel-v}" --notes "프로그램 전용 업데이트. 계정·엑셀·프록시 설정은 포함하지 않으며 기존 V2R 업데이트와 별도로 배포됩니다." --latest=false
