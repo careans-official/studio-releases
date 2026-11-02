@@ -1,6 +1,6 @@
 {
-  "version": "1.1.2",
-  "url": "https://github.com/careans-official/studio-releases/releases/download/gatling-excel-v1.1.2/gatling-excel-windows-1.1.2.zip",
   "product": "gatling-excel",
-  "sha256": "251d3f98f8f876f59ffe6f7305e4e6c194273a1f8d8bced1761e1c15045928e7"
+  "url": "https://github.com/careans-official/studio-releases/releases/download/gatling-excel-v1.1.3/gatling-excel-windows-1.1.3.zip",
+  "version": "1.1.3",
+  "sha256": "2d6997f1708b5d05860b1c45c33115c24576167f83cd655adca4f251b8b58c24"
 }
